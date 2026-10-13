@@ -2,6 +2,10 @@
 
 專為成年子女設計的手機優先（Mobile-First）抽卡互動 Web App。讓你在溫馨、輕鬆的圍爐或品茗茶席氣氛中，一邊抽卡談心，一邊錄下父母從童年、青春、出社會打拼、戀愛成家、育兒到熟年智慧的珍貴口述歷史。
 
+👉 **[點此直接在手機/電腦上線體驗 (GitHub Pages)](https://edwardyy1224.github.io/parent-story-cards/)**
+*(支援 HTTPS，手機 Safari/Chrome 可直接錄音)*
+
+
 ---
 
 ## 🌟 核心功能特色
