@@ -1,0 +1,2004 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>光陰慢聊・父母生命故事訪談抽卡遊戲</title>
+  <meta name="description" content="一邊抽卡談心，一邊錄下父母珍貴的人生口述歷史。手機優先、長輩友善、溫暖復古紙感設計。">
+  
+  <style>
+    /* ==========================================================================
+       1. 變數與設計體系（Design Tokens - 溫暖茶席、牛皮紙與復古拍立得風格）
+       ========================================================================== */
+    :root {
+      --bg-primary: #FAF6F0;       /* 溫暖宣紙米白底色 */
+      --bg-surface: #FFFDF9;       /* 卡片正面牛奶白紙感 */
+      --bg-surface-back: #FBF8F2;  /* 卡片背面微暖紙感 */
+      --bg-accent: #EFE6D8;        /* 膠囊按鈕淡褐 */
+      --bg-accent-hover: #E4D8C5;
+      
+      --color-text-main: #3C2F2F;  /* 沉穩炭茶褐（高對比度且護眼） */
+      --color-text-muted: #78665E; /* 說明副色（石板暖灰） */
+      --color-text-light: #9C897E; /* 弱輔助色 */
+      
+      --primary: #A35C38;          /* 陶土暖赭色（主視覺亮點） */
+      --primary-hover: #8D4B2B;
+      --primary-light: #F8EFEA;
+      --secondary: #6B7C60;        /* 杉木青綠（沉穩點綴） */
+      --danger: #BA3D35;           /* 硃砂紅（錄音呼吸指示） */
+      --danger-light: #FBECEB;
+      --border-warm: #E6DCce;      /* 暖色紙張邊界線 */
+      --card-border: #DCD0BF;      /* 拍立得邊框線 */
+
+      --shadow-soft: 0 4px 20px rgba(60, 47, 47, 0.07);
+      --shadow-card: 0 16px 38px rgba(60, 47, 47, 0.12), 0 4px 12px rgba(60, 47, 47, 0.05);
+      --shadow-press: 0 2px 6px rgba(60, 47, 47, 0.1);
+
+      --font-family: -apple-system, BlinkMacSystemFont, "PingFang TC", "Noto Serif TC", "Songti TC", "Microsoft JhengHei", "Heiti TC", serif, sans-serif;
+      --card-title-size: 23px;     /* 卡片提問字體預設 */
+      --card-tip-size: 16px;       /* 提示追問字體 */
+      --line-height-reading: 1.68; /* 長輩舒適易讀行距 */
+      --radius-card: 20px;
+      --radius-btn: 14px;
+      --safe-bottom: env(safe-area-inset-bottom, 16px);
+    }
+
+    /* 字體大小調節級別 */
+    body.font-large {
+      --card-title-size: 26px;
+      --card-tip-size: 18px;
+    }
+    body.font-xlarge {
+      --card-title-size: 29px;
+      --card-tip-size: 20px;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      -webkit-tap-highlight-color: transparent;
+      user-select: none;
+      -webkit-user-select: none;
+    }
+
+    body {
+      background-color: var(--bg-primary);
+      color: var(--color-text-main);
+      font-family: var(--font-family);
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      overflow-x: hidden;
+      position: relative;
+      touch-action: pan-y;
+      background-image: 
+        radial-gradient(circle at 15% 15%, rgba(163, 92, 56, 0.03) 0%, transparent 40%),
+        radial-gradient(circle at 85% 85%, rgba(107, 124, 96, 0.04) 0%, transparent 40%);
+    }
+
+    /* 容器架構：限制手機最大寬度，電腦上居中展示 */
+    .app-container {
+      width: 100%;
+      max-width: 480px;
+      min-height: 100vh;
+      display: flex;
+      flex-direction: column;
+      padding: 12px 16px calc(105px + var(--safe-bottom)) 16px;
+      position: relative;
+    }
+
+    /* ==========================================================================
+       2. 頂部狀態列與導航列（Header & Category Bar）
+       ========================================================================== */
+    .app-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 6px 0 10px 0;
+    }
+
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .brand-stamp {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      width: 32px;
+      height: 32px;
+      border: 1.5px solid var(--primary);
+      color: var(--primary);
+      border-radius: 8px;
+      font-size: 18px;
+      font-weight: 700;
+      background: rgba(163, 92, 56, 0.06);
+      transform: rotate(-3deg);
+    }
+
+    .brand-title {
+      font-size: 19px;
+      font-weight: 700;
+      letter-spacing: 1px;
+      color: var(--color-text-main);
+    }
+
+    .brand-subtitle {
+      font-size: 11px;
+      color: var(--color-text-muted);
+      letter-spacing: 0.5px;
+    }
+
+    .header-actions {
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .icon-btn {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-warm);
+      color: var(--color-text-main);
+      width: 38px;
+      height: 38px;
+      border-radius: 12px;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      box-shadow: var(--shadow-press);
+      transition: all 0.2s ease;
+      position: relative;
+    }
+
+    .icon-btn:active {
+      transform: scale(0.92);
+      background: var(--bg-accent);
+    }
+
+    .badge-count {
+      position: absolute;
+      top: -3px;
+      right: -3px;
+      background: var(--primary);
+      color: #fff;
+      font-size: 10px;
+      font-weight: bold;
+      min-width: 16px;
+      height: 16px;
+      border-radius: 8px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 0 4px;
+    }
+
+    /* 階段切換滑動選單（Tab Bar） */
+    .category-scroll-container {
+      width: 100%;
+      overflow-x: auto;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      margin: 6px 0 10px 0;
+      padding-bottom: 4px;
+    }
+    .category-scroll-container::-webkit-scrollbar {
+      display: none;
+    }
+
+    .category-tabs {
+      display: flex;
+      gap: 8px;
+      white-space: nowrap;
+      padding: 2px 2px;
+    }
+
+    .cat-pill {
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      padding: 7px 14px;
+      background: var(--bg-surface);
+      border: 1px solid var(--border-warm);
+      border-radius: 20px;
+      font-size: 13.5px;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      transition: all 0.22s ease;
+      font-weight: 500;
+    }
+
+    .cat-pill.active {
+      background: var(--primary);
+      color: #ffffff;
+      border-color: var(--primary);
+      box-shadow: 0 4px 12px rgba(163, 92, 56, 0.28);
+      font-weight: 600;
+    }
+
+    /* 進度指標列 */
+    .progress-bar-wrapper {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: var(--color-text-light);
+      padding: 2px 4px 8px 4px;
+    }
+
+    .progress-track {
+      flex: 1;
+      height: 4px;
+      background: var(--border-warm);
+      border-radius: 2px;
+      margin: 0 10px;
+      overflow: hidden;
+    }
+
+    .progress-fill {
+      height: 100%;
+      background: var(--primary);
+      width: 0%;
+      border-radius: 2px;
+      transition: width 0.3s ease;
+    }
+
+    /* ==========================================================================
+       3. 核心卡片區（3D Flip Card Container & Polaroids Effect）
+       ========================================================================== */
+    .card-stage {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      perspective: 1400px;
+      margin: 6px 0 16px 0;
+      min-height: 380px;
+      position: relative;
+    }
+
+    .card-container {
+      width: 100%;
+      height: 100%;
+      max-height: 470px;
+      min-height: 390px;
+      position: relative;
+      transform-style: preserve-3d;
+      transition: transform 0.62s cubic-bezier(0.34, 1.56, 0.64, 1);
+      cursor: pointer;
+    }
+
+    .card-container.is-flipped {
+      transform: rotateY(180deg);
+    }
+
+    /* 左右切換的過場滑動動畫 */
+    .card-container.slide-out-left {
+      animation: slideOutLeft 0.28s forwards ease-in;
+    }
+    .card-container.slide-in-right {
+      animation: slideInRight 0.34s forwards cubic-bezier(0.2, 0.9, 0.3, 1);
+    }
+    .card-container.slide-out-right {
+      animation: slideOutRight 0.28s forwards ease-in;
+    }
+    .card-container.slide-in-left {
+      animation: slideInLeft 0.34s forwards cubic-bezier(0.2, 0.9, 0.3, 1);
+    }
+
+    @keyframes slideOutLeft {
+      0% { transform: translateX(0) scale(1) rotate(0deg); opacity: 1; }
+      100% { transform: translateX(-120px) scale(0.9) rotate(-6deg); opacity: 0; }
+    }
+    @keyframes slideInRight {
+      0% { transform: translateX(120px) scale(0.9) rotate(6deg); opacity: 0; }
+      100% { transform: translateX(0) scale(1) rotate(0deg); opacity: 1; }
+    }
+    @keyframes slideOutRight {
+      0% { transform: translateX(0) scale(1) rotate(0deg); opacity: 1; }
+      100% { transform: translateX(120px) scale(0.9) rotate(6deg); opacity: 0; }
+    }
+    @keyframes slideInLeft {
+      0% { transform: translateX(-120px) scale(0.9) rotate(-6deg); opacity: 0; }
+      100% { transform: translateX(0) scale(1) rotate(0deg); opacity: 1; }
+    }
+
+    /* 卡片兩面共同屬性（拍立得與老木質相框的雙層邊飾） */
+    .card-face {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      backface-visibility: hidden;
+      -webkit-backface-visibility: hidden;
+      border-radius: var(--radius-card);
+      box-shadow: var(--shadow-card);
+      border: 1px solid var(--card-border);
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background-clip: padding-box;
+    }
+
+    /* --- 卡片正面 (Card Front - 封面拍立得封箋感) --- */
+    .card-front {
+      background: var(--bg-surface);
+      padding: 24px 20px;
+      justify-content: space-between;
+      align-items: center;
+      text-align: center;
+      border: 2px solid #EFE4D3;
+      background-image: 
+        radial-gradient(#E8DCCB 0.75px, transparent 0.75px);
+      background-size: 18px 18px;
+    }
+
+    .front-top-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: var(--bg-accent);
+      color: var(--primary);
+      padding: 6px 14px;
+      border-radius: 30px;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.5px;
+    }
+
+    .front-art-frame {
+      width: 140px;
+      height: 140px;
+      border-radius: 50%;
+      background: var(--bg-primary);
+      border: 2px dashed var(--border-warm);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      margin: 10px 0;
+      box-shadow: inset 0 2px 8px rgba(0,0,0,0.03);
+      position: relative;
+    }
+
+    .front-stage-icon {
+      font-size: 54px;
+      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.06));
+    }
+
+    .front-seal {
+      position: absolute;
+      bottom: -4px;
+      right: -4px;
+      width: 44px;
+      height: 44px;
+      border-radius: 50%;
+      border: 1.5px solid var(--primary);
+      color: var(--primary);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 10px;
+      font-weight: 700;
+      background: #FFFDF9;
+      transform: rotate(15deg);
+      line-height: 1.1;
+      text-align: center;
+    }
+
+    .front-headline {
+      font-size: 20px;
+      font-weight: 700;
+      color: var(--color-text-main);
+      margin-bottom: 6px;
+      letter-spacing: 0.8px;
+    }
+
+    .front-desc {
+      font-size: 14px;
+      color: var(--color-text-muted);
+      max-width: 85%;
+      line-height: 1.5;
+    }
+
+    .front-flip-hint {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--primary);
+      background: var(--primary-light);
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      animation: pulseHint 2.4s infinite ease-in-out;
+    }
+
+    @keyframes pulseHint {
+      0%, 100% { transform: scale(1); opacity: 0.95; }
+      50% { transform: scale(1.04); opacity: 1; }
+    }
+
+    /* --- 卡片背面 (Card Back - 具體題目與提示語) --- */
+    .card-back {
+      background: var(--bg-surface-back);
+      transform: rotateY(180deg);
+      padding: 24px 22px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+      border: 2px solid #E9DEC9;
+    }
+
+    .back-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-bottom: 1px dashed var(--border-warm);
+      padding-bottom: 12px;
+    }
+
+    .back-stage-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--primary);
+    }
+
+    .back-era-tag {
+      font-size: 11.5px;
+      background: var(--bg-accent);
+      color: var(--color-text-muted);
+      padding: 3px 8px;
+      border-radius: 6px;
+      letter-spacing: 0.5px;
+    }
+
+    .back-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      padding: 14px 0;
+    }
+
+    .back-question {
+      font-size: var(--card-title-size);
+      font-weight: 700;
+      line-height: var(--line-height-reading);
+      color: var(--color-text-main);
+      margin-bottom: 16px;
+      text-align: left;
+      letter-spacing: 0.3px;
+    }
+
+    .back-tip-box {
+      background: #F4ECE1;
+      border-left: 3.5px solid var(--secondary);
+      border-radius: 0 10px 10px 0;
+      padding: 12px 14px;
+      text-align: left;
+    }
+
+    .tip-title {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      font-size: 12.5px;
+      font-weight: 700;
+      color: var(--secondary);
+      margin-bottom: 4px;
+    }
+
+    .tip-content {
+      font-size: var(--card-tip-size);
+      color: var(--color-text-muted);
+      line-height: 1.55;
+    }
+
+    .back-footer {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      border-top: 1px dashed var(--border-warm);
+      padding-top: 10px;
+      font-size: 12px;
+      color: var(--color-text-light);
+    }
+
+    .back-footer-hint {
+      display: flex;
+      align-items: center;
+      gap: 4px;
+    }
+
+    /* ==========================================================================
+       4. 卡片操作控制按鈕列 (Card Action Controls)
+       ========================================================================== */
+    .controls-grid {
+      display: grid;
+      grid-template-columns: 1fr 1.6fr 1fr;
+      gap: 10px;
+      width: 100%;
+      margin-bottom: 12px;
+    }
+
+    .action-btn {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      min-height: 52px;
+      border-radius: var(--radius-btn);
+      border: 1px solid var(--border-warm);
+      background: var(--bg-surface);
+      color: var(--color-text-main);
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      box-shadow: var(--shadow-press);
+      transition: all 0.2s ease;
+    }
+
+    .action-btn:active {
+      transform: scale(0.95);
+      background: var(--bg-accent);
+    }
+
+    .action-btn.primary-btn {
+      background: var(--primary);
+      color: #ffffff;
+      border-color: var(--primary);
+      box-shadow: 0 6px 16px rgba(163, 92, 56, 0.3);
+      font-size: 16px;
+    }
+
+    .action-btn.primary-btn:active {
+      background: var(--primary-hover);
+    }
+
+    .action-btn.favorited {
+      color: #E24B4B;
+      border-color: #F7D0D0;
+      background: #FDF4F4;
+    }
+
+    /* 手勢提示 */
+    .swipe-hint {
+      text-align: center;
+      font-size: 12px;
+      color: var(--color-text-light);
+      margin-top: 2px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+    }
+
+    /* ==========================================================================
+       5. 懸浮訪談錄音機 (Fixed Floating Audio Recorder)
+       ========================================================================== */
+    .recorder-toolbar {
+      position: fixed;
+      bottom: 0;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 100%;
+      max-width: 480px;
+      padding: 10px 16px calc(10px + var(--safe-bottom)) 16px;
+      background: rgba(255, 253, 249, 0.94);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border-top: 1px solid var(--border-warm);
+      box-shadow: 0 -4px 20px rgba(60, 47, 47, 0.08);
+      z-index: 90;
+      transition: all 0.3s ease;
+    }
+
+    .recorder-content {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      background: var(--bg-primary);
+      border: 1px solid var(--border-warm);
+      border-radius: 16px;
+      padding: 8px 14px;
+    }
+
+    /* 未錄音狀態按鈕 */
+    .idle-record-btn {
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      background: var(--primary);
+      color: #ffffff;
+      border: none;
+      border-radius: 12px;
+      min-height: 48px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 4px 14px rgba(163, 92, 56, 0.25);
+      transition: transform 0.2s;
+    }
+
+    .idle-record-btn:active {
+      transform: scale(0.97);
+    }
+
+    /* 錄音中狀態顯示 */
+    .active-record-ui {
+      display: none;
+      width: 100%;
+      align-items: center;
+      justify-content: space-between;
+    }
+
+    .rec-status-info {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .rec-indicator {
+      width: 12px;
+      height: 12px;
+      border-radius: 50%;
+      background: var(--danger);
+      animation: pulseRecord 1.2s infinite ease-in-out;
+    }
+
+    .rec-indicator.paused {
+      background: #D9822B;
+      animation: none;
+    }
+
+    @keyframes pulseRecord {
+      0%, 100% { opacity: 1; transform: scale(1); }
+      50% { opacity: 0.3; transform: scale(0.8); }
+    }
+
+    .rec-time {
+      font-size: 16px;
+      font-weight: 700;
+      font-variant-numeric: tabular-nums;
+      color: var(--color-text-main);
+    }
+
+    .rec-ctrl-buttons {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .btn-rec-action {
+      background: var(--bg-surface);
+      border: 1px solid var(--border-warm);
+      border-radius: 10px;
+      padding: 6px 12px;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      color: var(--color-text-main);
+    }
+
+    .btn-rec-action:active {
+      background: var(--bg-accent);
+    }
+
+    .btn-rec-stop {
+      background: var(--danger);
+      color: #fff;
+      border-color: var(--danger);
+    }
+
+    /* ==========================================================================
+       6. 彈窗設計（Modals：錄音完成、新增自訂問題、我的收藏、字體設定）
+       ========================================================================== */
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      background: rgba(45, 35, 35, 0.55);
+      backdrop-filter: blur(4px);
+      -webkit-backdrop-filter: blur(4px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 100;
+      padding: 16px;
+      opacity: 0;
+      transition: opacity 0.25s ease;
+    }
+
+    .modal-overlay.open {
+      display: flex;
+      opacity: 1;
+    }
+
+    .modal-card {
+      background: var(--bg-surface);
+      border-radius: 22px;
+      width: 100%;
+      max-width: 440px;
+      max-height: 85vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.22);
+      border: 1px solid var(--border-warm);
+      overflow: hidden;
+      transform: translateY(20px);
+      transition: transform 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    }
+
+    .modal-overlay.open .modal-card {
+      transform: translateY(0);
+    }
+
+    .modal-header {
+      padding: 16px 20px;
+      border-bottom: 1px solid var(--border-warm);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--bg-surface-back);
+    }
+
+    .modal-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--color-text-main);
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .modal-close {
+      background: transparent;
+      border: none;
+      font-size: 20px;
+      color: var(--color-text-muted);
+      cursor: pointer;
+      padding: 4px;
+    }
+
+    .modal-body {
+      padding: 18px 20px;
+      overflow-y: auto;
+      font-size: 15px;
+      line-height: 1.6;
+    }
+
+    .modal-footer {
+      padding: 12px 20px;
+      border-top: 1px solid var(--border-warm);
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      background: var(--bg-surface-back);
+    }
+
+    /* 表單項目樣式 */
+    .form-group {
+      margin-bottom: 14px;
+      text-align: left;
+    }
+
+    .form-label {
+      display: block;
+      font-size: 13.5px;
+      font-weight: 600;
+      color: var(--color-text-muted);
+      margin-bottom: 5px;
+    }
+
+    .form-select, .form-input, .form-textarea {
+      width: 100%;
+      padding: 10px 12px;
+      border: 1px solid var(--border-warm);
+      border-radius: 10px;
+      background: var(--bg-surface);
+      font-family: inherit;
+      font-size: 15px;
+      color: var(--color-text-main);
+      outline: none;
+      -webkit-user-select: text;
+      user-select: text;
+    }
+
+    .form-select:focus, .form-input:focus, .form-textarea:focus {
+      border-color: var(--primary);
+      box-shadow: 0 0 0 3px rgba(163, 92, 56, 0.15);
+    }
+
+    .form-textarea {
+      min-height: 75px;
+      resize: vertical;
+    }
+
+    /* 收藏清單項目 */
+    .favorite-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
+
+    .favorite-item {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-warm);
+      border-radius: 12px;
+      padding: 12px 14px;
+      cursor: pointer;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      transition: all 0.2s ease;
+    }
+
+    .favorite-item:active {
+      background: var(--bg-accent);
+      transform: scale(0.98);
+    }
+
+    .favorite-info {
+      flex: 1;
+      padding-right: 10px;
+    }
+
+    .fav-category {
+      font-size: 11.5px;
+      color: var(--primary);
+      font-weight: 600;
+      margin-bottom: 3px;
+    }
+
+    .fav-title {
+      font-size: 14.5px;
+      font-weight: 600;
+      color: var(--color-text-main);
+      line-height: 1.4;
+    }
+
+    /* 播放器面板自訂樣式 */
+    .audio-player-box {
+      background: var(--bg-primary);
+      border: 1px solid var(--border-warm);
+      border-radius: 14px;
+      padding: 14px;
+      margin: 12px 0;
+      text-align: center;
+    }
+
+    .audio-player-box audio {
+      width: 100%;
+      margin-top: 8px;
+    }
+
+    .audio-meta-title {
+      font-size: 14px;
+      font-weight: 700;
+      color: var(--color-text-main);
+    }
+
+    .audio-meta-duration {
+      font-size: 12px;
+      color: var(--color-text-muted);
+      margin-top: 2px;
+    }
+
+    /* 浮動提示吐司 (Toast notification) */
+    .toast {
+      position: fixed;
+      top: 20px;
+      left: 50%;
+      transform: translateX(-50%) translateY(-30px);
+      background: rgba(60, 47, 47, 0.9);
+      color: #ffffff;
+      padding: 9px 18px;
+      border-radius: 30px;
+      font-size: 14px;
+      font-weight: 500;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.2);
+      z-index: 120;
+      opacity: 0;
+      pointer-events: none;
+      transition: all 0.3s cubic-bezier(0.18, 0.89, 0.32, 1.28);
+    }
+
+    .toast.show {
+      transform: translateX(-50%) translateY(0);
+      opacity: 1;
+    }
+
+    /* 當前題庫抽完時的恭喜介面 */
+    .deck-empty-view {
+      display: none;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      text-align: center;
+      padding: 24px;
+      background: var(--bg-surface);
+      border-radius: var(--radius-card);
+      border: 1px solid var(--card-border);
+      box-shadow: var(--shadow-card);
+      width: 100%;
+      height: 100%;
+      max-height: 440px;
+    }
+  </style>
+</head>
+<body>
+
+  <div class="app-container">
+
+    <!-- 1. 頂部狀態列 -->
+    <header class="app-header">
+      <div class="brand">
+        <div class="brand-stamp">憶</div>
+        <div>
+          <div class="brand-title">光陰慢聊</div>
+          <div class="brand-subtitle">父母生命故事訪談抽卡</div>
+        </div>
+      </div>
+      
+      <div class="header-actions">
+        <!-- 字體放大按鈕 -->
+        <button class="icon-btn" id="btn-font-toggle" title="調整字體大小" aria-label="調整字體大小">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M4 19V7l5-2 5 2v12"/>
+            <path d="M4 13h10"/>
+            <path d="M17 19v-6l3-1 3 1v6"/>
+            <path d="M17 16h6"/>
+          </svg>
+        </button>
+        <!-- 收藏清單 -->
+        <button class="icon-btn" id="btn-open-bookmarks" title="我的收藏" aria-label="我的收藏">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/>
+          </svg>
+          <span class="badge-count" id="badge-fav-count" style="display:none;">0</span>
+        </button>
+        <!-- 新增自訂題目 -->
+        <button class="icon-btn" id="btn-open-add" title="新增自訂問題" aria-label="新增自訂問題">
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <line x1="12" y1="5" x2="12" y2="19"></line>
+            <line x1="5" y1="12" x2="19" y2="12"></line>
+          </svg>
+        </button>
+      </div>
+    </header>
+
+    <!-- 2. 人生階段分類切換 Tab -->
+    <nav class="category-scroll-container" aria-label="人生階段分類">
+      <div class="category-tabs" id="category-tabs-container">
+        <!-- 動態渲染類別標籤 -->
+      </div>
+    </nav>
+
+    <!-- 進度指標列 -->
+    <div class="progress-bar-wrapper">
+      <span id="label-stage-name">全部隨機</span>
+      <div class="progress-track">
+        <div class="progress-fill" id="progress-fill"></div>
+      </div>
+      <span id="label-card-progress">1 / 54</span>
+    </div>
+
+    <!-- 3. 中央核心 3D 卡片舞台 -->
+    <main class="card-stage" id="card-stage-area">
+      
+      <!-- 正常卡片容器 -->
+      <div class="card-container" id="story-card" role="button" aria-label="點擊翻轉卡片">
+        
+        <!-- 卡片正面 (拍立得/封箋樣式) -->
+        <div class="card-face card-front">
+          <div class="front-top-tag">
+            <span id="front-cat-icon">🌱</span>
+            <span id="front-cat-name">出生與童年</span>
+          </div>
+
+          <div class="front-art-frame">
+            <div class="front-stage-icon" id="front-big-icon">🏡</div>
+            <div class="front-seal">光陰<br>印記</div>
+          </div>
+
+          <div>
+            <div class="front-headline" id="front-headline">第 1 張時光記憶卡</div>
+            <div class="front-desc">請深呼吸，靜靜看著長輩的眼睛。<br>輕觸這張卡片翻開，聽聽那時的年歲。</div>
+          </div>
+
+          <div class="front-flip-hint">
+            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"/>
+            </svg>
+            <span>點擊翻開看題目</span>
+          </div>
+        </div>
+
+        <!-- 卡片背面 (具體問題與子女追問錦囊) -->
+        <div class="card-face card-back">
+          <div class="back-header">
+            <div class="back-stage-badge">
+              <span id="back-cat-icon">🌿</span>
+              <span id="back-cat-name">出生與童年</span>
+            </div>
+            <div class="back-era-tag" id="back-era-tag">#老家回憶</div>
+          </div>
+
+          <div class="back-body">
+            <h2 class="back-question" id="back-question-text">
+              載入中...
+            </h2>
+
+            <div class="back-tip-box">
+              <div class="tip-title">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+                  <path d="M12 2a7 7 0 0 0-7 7c0 2.38 1.19 4.47 3 5.74V17a2 2 0 0 0 2 2h4a2 2 0 0 0 2-2v-2.26c1.81-1.27 3-3.36 3-5.74a7 7 0 0 0-7-7M9 21h6"/>
+                </svg>
+                <span>傾聽引導小錦囊</span>
+              </div>
+              <div class="tip-content" id="back-tip-text">
+                可以多問問當時的具體物價、老家附近的氣味或當時的聲音喔！
+              </div>
+            </div>
+          </div>
+
+          <div class="back-footer">
+            <div class="back-footer-hint">
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <circle cx="12" cy="12" r="10"></circle>
+                <path d="M12 16v-4"></path>
+                <path d="M12 8h.01"></path>
+              </svg>
+              <span>輕觸任意處可翻回正面</span>
+            </div>
+            <span id="back-id-label">#01</span>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 當前分類全部抽完時顯示 -->
+      <div class="deck-empty-view" id="deck-empty-box">
+        <div style="font-size: 54px; margin-bottom: 12px;">🎉</div>
+        <h3 style="font-size: 20px; font-weight:700; margin-bottom: 8px;">這個階段的故事都聊過囉！</h3>
+        <p style="font-size: 14px; color: var(--color-text-muted); margin-bottom: 20px; line-height: 1.6;">
+          你們已經走完了這段時光迴廊。<br>想再回味一次，或是切換到其他人生階段繼續探索嗎？
+        </p>
+        <button class="action-btn primary-btn" id="btn-reshuffle" style="min-width: 170px;">
+          <span>🔄 重新洗牌此階段</span>
+        </button>
+      </div>
+
+    </main>
+
+    <!-- 4. 底部操作按鈕 (上一張、抽下一張、收藏) -->
+    <section class="controls-grid">
+      <button class="action-btn" id="btn-prev-card" aria-label="上一張卡片">
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+          <path d="M15 18l-6-6 6-6"/>
+        </svg>
+        <span>上一張</span>
+      </button>
+
+      <button class="action-btn primary-btn" id="btn-next-card" aria-label="抽取下一張卡片">
+        <span>換下一張</span>
+        <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.3">
+          <path d="M9 18l6-6-6-6"/>
+        </svg>
+      </button>
+
+      <button class="action-btn" id="btn-fav-card" aria-label="收藏此問題">
+        <svg id="fav-icon-svg" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2">
+          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"></path>
+        </svg>
+        <span id="fav-btn-label">收藏</span>
+      </button>
+    </section>
+
+    <div class="swipe-hint">
+      <span>👈 左右滑動亦可快速切換卡片 👉</span>
+    </div>
+
+  </div> <!-- end app-container -->
+
+  <!-- ==========================================================================
+       5. 懸浮訪談錄音機工具列
+       ========================================================================== -->
+  <aside class="recorder-toolbar" aria-label="語音訪談錄音工具">
+    <div class="recorder-content">
+      
+      <!-- 未錄音模式 -->
+      <button class="idle-record-btn" id="btn-start-record">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3Z"></path>
+          <path d="M19 10v2a7 7 0 0 1-14 0v-2"></path>
+          <line x1="12" y1="19" x2="12" y2="22"></line>
+        </svg>
+        <span>🎙️ 錄下這段溫馨故事</span>
+      </button>
+
+      <!-- 錄音中/暫停模式 -->
+      <div class="active-record-ui" id="active-record-ui">
+        <div class="rec-status-info">
+          <div class="rec-indicator" id="rec-dot"></div>
+          <span class="rec-time" id="rec-timer-label">00:00</span>
+        </div>
+        <div class="rec-ctrl-buttons">
+          <button class="btn-rec-action" id="btn-pause-record">
+            <span id="pause-record-text">⏸️ 暫停</span>
+          </button>
+          <button class="btn-rec-action btn-rec-stop" id="btn-stop-record">
+            <span>⏹️ 結束保存</span>
+          </button>
+        </div>
+      </div>
+
+    </div>
+  </aside>
+
+  <!-- ==========================================================================
+       6. 彈窗群 (Modals)
+       ========================================================================== -->
+
+  <!-- A. 錄音完成試聽與下載彈窗 -->
+  <div class="modal-overlay" id="modal-audio-result">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span>📼 錄音珍藏就緒</span>
+        </div>
+        <button class="modal-close" onclick="closeModal('modal-audio-result')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <p style="font-size: 13.5px; color: var(--color-text-muted);">
+          這段口述歷史已成功記錄！你可以直接線上試聽，或下載音檔永久保存於手機中。
+        </p>
+
+        <div class="audio-player-box">
+          <div class="audio-meta-title" id="audio-modal-topic">人生回憶片段</div>
+          <div class="audio-meta-duration" id="audio-modal-duration">時長：00:00</div>
+          <audio id="modal-audio-player" controls preload="metadata"></audio>
+        </div>
+
+        <div style="font-size: 12px; color: var(--color-text-light); line-height: 1.5; background: #FAF5ED; padding: 10px; border-radius: 8px;">
+          🔒 <strong>隱私安全說明</strong>：錄音純粹在您的本機瀏覽器內生成，不會上傳任何遠端伺服器，請放心下載留存。
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="action-btn" onclick="closeModal('modal-audio-result')">稍後再說</button>
+        <a class="action-btn primary-btn" id="btn-download-audio" download="父母生命故事.webm" style="text-decoration:none; padding: 0 16px;">
+          <span>💾 下載音檔至手機</span>
+        </a>
+      </div>
+    </div>
+  </div>
+
+  <!-- B. 新增自訂問題彈窗 -->
+  <div class="modal-overlay" id="modal-add-question">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span>＋ 新增自訂私房問題</span>
+        </div>
+        <button class="modal-close" onclick="closeModal('modal-add-question')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <form id="form-add-question" onsubmit="handleCustomQuestionSubmit(event)">
+          <div class="form-group">
+            <label class="form-label" for="custom-stage-select">選擇人生階段</label>
+            <select class="form-select" id="custom-stage-select" required>
+              <option value="1">🌱 出生與童年</option>
+              <option value="2">🚲 青春求學與入伍</option>
+              <option value="3">💼 出社會與打拼</option>
+              <option value="4">🌿 戀愛與成家</option>
+              <option value="5">🧸 為人父母育兒</option>
+              <option value="6">🍵 熟年智慧與叮嚀</option>
+            </select>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="custom-question-input">你想問爸媽的問題 *</label>
+            <textarea class="form-textarea" id="custom-question-input" placeholder="例如：當年你們搬到現在這間房子時，第一天晚上是怎麼慶祝的？" required></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="custom-tip-input">追問提示或小錦囊（選填）</label>
+            <textarea class="form-textarea" id="custom-tip-input" style="min-height: 55px;" placeholder="例如：可以問問當時有去吃哪家館子慶祝嗎？"></textarea>
+          </div>
+
+          <div class="form-group">
+            <label class="form-label" for="custom-tag-input">時代情境標籤（選填）</label>
+            <input type="text" class="form-input" id="custom-tag-input" placeholder="#獨家私房回憶">
+          </div>
+
+          <div style="display: flex; justify-content: flex-end; gap: 10px; margin-top: 18px;">
+            <button type="button" class="action-btn" onclick="closeModal('modal-add-question')">取消</button>
+            <button type="submit" class="action-btn primary-btn">加入題庫</button>
+          </div>
+        </form>
+      </div>
+    </div>
+  </div>
+
+  <!-- C. 我的收藏清單彈窗 -->
+  <div class="modal-overlay" id="modal-bookmarks">
+    <div class="modal-card">
+      <div class="modal-header">
+        <div class="modal-title">
+          <span>⭐ 我的收藏題目</span>
+        </div>
+        <button class="modal-close" onclick="closeModal('modal-bookmarks')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div id="favorites-list-container" class="favorite-list">
+          <!-- 動態載入收藏清單 -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="action-btn" onclick="closeModal('modal-bookmarks')">關閉</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 提示 Toast -->
+  <div class="toast" id="app-toast">已加入收藏</div>
+
+  <!-- ==========================================================================
+       7. 核心邏輯 JavaScript
+       ========================================================================== -->
+  <script>
+    /* --------------------------------------------------------------------------
+       A. 54 道精選人生題庫資料（六大階段，每階段 9 題）
+       -------------------------------------------------------------------------- */
+    const STAGE_META = [
+      { id: 0, name: "全部隨機", icon: "🎲", bigIcon: "⏳" },
+      { id: 1, name: "出生與童年", icon: "🌱", bigIcon: "🏡" },
+      { id: 2, name: "青春求學與入伍", icon: "🚲", bigIcon: "📻" },
+      { id: 3, name: "出社會與打拼", icon: "💼", bigIcon: "🏭" },
+      { id: 4, name: "戀愛與成家", icon: "🌿", bigIcon: "💌" },
+      { id: 5, name: "為人父母育兒", icon: "🧸", bigIcon: "🍼" },
+      { id: 6, name: "熟年智慧與叮嚀", icon: "🍵", bigIcon: "🌅" }
+    ];
+
+    const DEFAULT_QUESTIONS = [
+      // 階段 1：出生與童年
+      { id: 101, stageId: 1, category: "出生與童年", tag: "#老家光景", question: "你記憶中最早住的家是什麼樣子的？周圍有什麼特殊的聲音或氣味？", tip: "可以問問是三合院、日式平房還是老公寓？當時鄰居串門子熟絡嗎？" },
+      { id: 102, stageId: 1, category: "出生與童年", tag: "#長輩管教", question: "你的父母或祖父母年輕時個性如何？他們對你最嚴厲或最疼你的回憶是什麼？", tip: "問問有沒有被竹筍炒肉絲（竹枝修理）或偷偷塞私房零用錢的趣事！" },
+      { id: 103, stageId: 1, category: "出生與童年", tag: "#巷弄嬉戲", question: "小時候沒有手機和電腦，放學後你都跟鄰居小孩在巷子裡玩什麼遊戲？", tip: "打彈珠、跳格子、鬥蟋蟀、跳橡皮筋或爬樹？有沒有玩到受傷不敢講？" },
+      { id: 104, stageId: 1, category: "出生與童年", tag: "#童年零嘴", question: "小時候最渴望吃到的點心或零食是什麼？雜貨店裡一塊錢可以買到什麼？", tip: "麵茶、枝仔冰、金龜糖還是柑仔店的抽抽樂？當時味道如何？" },
+      { id: 105, stageId: 1, category: "出生與童年", tag: "#熱鬧年節", question: "小時候過年過節，家裡是怎麼準備的？你最期待哪一個環節？", tip: "問問穿新衣、除夕圍爐年夜菜、守歲放鞭炮，壓歲錢拿了多少？" },
+      { id: 106, stageId: 1, category: "出生與童年", tag: "#長輩口頭禪", question: "長輩以前最常叮嚀你的一句話是什麼？到現在你還記得嗎？", tip: "例如「飯碗要扒乾淨」、「吃得苦中苦」，現在自己回想起來有什麼感觸？" },
+      { id: 107, stageId: 1, category: "出生與童年", tag: "#童年秘密", question: "小時候有沒有偷偷做過什麼驚險、調皮或是瞞著爸媽的秘密行動？", tip: "偷偷去溪邊戲水、偷摘鄰居水果、還是把零用錢花光了不敢回家？" },
+      { id: 108, stageId: 1, category: "出生與童年", tag: "#入學第一天", question: "還記得小學第一天上學的心情嗎？背著什麼書包？誰牽著你的手去的？", tip: "有沒有哭著不肯放手？那時候班上有幾個同學？桌椅是什麼樣子？" },
+      { id: 109, stageId: 1, category: "出生與童年", tag: "#時代新科技", question: "家裡第一次買電視機、冰箱或洗衣機是什麼時候？全家人有多興奮？", tip: "黑白電視？村子或鄰居是不是都聚過來看楊麗花歌仔戲或少棒賽？" },
+
+      // 階段 2：青春求學與入伍
+      { id: 201, stageId: 2, category: "青春求學與入伍", tag: "#流行風潮", question: "國高中時期校園流行什麼樣的打扮？制服有偷偷改過或是留過什麼髮型？", tip: "大喇叭褲、半屏山髮型、中分頭，還是書包上用立可白寫座右銘？" },
+      { id: 202, stageId: 2, category: "青春求學與入伍", tag: "#時光收音機", question: "青春期最迷哪位歌手或哪一首流行歌？那首歌會讓你聯想到誰？", tip: "鳳飛飛、鄧麗君、羅大佑、張學友、王菲還是小虎隊？可以現場用手機放給爸媽聽！" },
+      { id: 203, stageId: 2, category: "青春求學與入伍", tag: "#年少叛逆", question: "學生時代做過最叛逆、讓師長最頭痛的一件事是什麼？", tip: "翹課去冰果室、抽煙、翻圍牆、還是跟別班同學嗆聲？" },
+      { id: 204, stageId: 2, category: "青春求學與入伍", tag: "#兵役抽籤", question: "當兵抽籤那天（或女孩等兵單的時光）心情如何？分發到哪裡去？", tip: "有沒有抽中金馬獎？新訓中心第一週是不是累到想家掉眼淚？" },
+      { id: 205, stageId: 2, category: "青春求學與入伍", tag: "#軍旅家書", question: "在部隊裡最難熬或最搞笑的一件事是什麼？當時跟誰通信最多？", tip: "站夜哨看星星、洗戰鬥澡、或是退伍前一晚有多興奮？" },
+      { id: 206, stageId: 2, category: "青春求學與入伍", tag: "#摯友死黨", question: "當年跟你無話不談、一起瘋一起笑的好朋友是誰？現在還有聯絡嗎？", tip: "你們以前最常聚在什麼地方？最後一次見面聊了什麼？" },
+      { id: 207, stageId: 2, category: "青春求學與入伍", tag: "#青澀情書", question: "學生時代有寫過或收過情書嗎？心跳最快的一瞬間是什麼時候？", tip: "信紙有沒有摺成愛心？是託同學偷偷轉交、還是夾在課本裡？" },
+      { id: 208, stageId: 2, category: "青春求學與入伍", tag: "#第一次離家", question: "第一次離開家鄉到外縣市求學或當兵，離家前一晚的心情如何？", tip: "行李箱裡裝了什麼？媽媽有沒有偷偷塞平安符或幾張折好的千元鈔？" },
+      { id: 209, stageId: 2, category: "青春求學與入伍", tag: "#少年壯志", question: "二十歲左右的你，當時對未來的最大憧憬與夢想是什麼？", tip: "當時想成為什麼樣的人？環遊世界、開一家店，還是想要賺大錢？" },
+
+      // 階段 3：出社會與打拼
+      { id: 301, stageId: 3, category: "出社會與打拼", tag: "#第一份薪水", question: "出社會的第一份工作是什麼？領到第一包厚厚薪水袋時，買了什麼或給了誰？", tip: "問問當時薪資是多少（例如三千、五千元）？交給家裡多少錢？" },
+      { id: 302, stageId: 3, category: "出社會與打拼", tag: "#職場震撼", question: "剛進社會時，有沒有吃過什麼悶虧或被前輩痛罵過？你當時怎麼調適的？", tip: "新人被當打雜跑腿、還是替別人背黑鍋？那時有想過放棄辭職嗎？" },
+      { id: 303, stageId: 3, category: "出社會與打拼", tag: "#拮据歲月", question: "年輕打拼時，最窮或手頭最緊的時候是怎麼撐過日子的？", tip: "月底數銅板？一碗陽春麵分兩餐？那段辛苦日子帶給你什麼深刻體悟？" },
+      { id: 304, stageId: 3, category: "出社會與打拼", tag: "#高光時刻", question: "工作生涯中，最讓你感到無比自豪、成就感爆棚的一件事是什麼？", tip: "談成大訂單、升遷主管、獲得老闆公開讚揚、還是解決了重大危機？" },
+      { id: 305, stageId: 3, category: "出社會與打拼", tag: "#咬牙低谷", question: "事業或生活曾遭遇過最大的挫折低谷是什麼？靠什麼力量撐過來的？", tip: "轉職困難、投資虧損、還是工廠遇險？當時是誰給了你最大的精神支撐？" },
+      { id: 306, stageId: 3, category: "出社會與打拼", tag: "#人生第一台車", question: "你買的第一輛腳踏車、機車或汽車是什麼牌子的？曾載過誰？", tip: "野狼125、偉士牌、追風、喜美Civic？那種握著龍頭/方向盤的自由滋味！" },
+      { id: 307, stageId: 3, category: "出社會與打拼", tag: "#時代浪潮", question: "你親身經歷過哪個重大的社會時代變動？對你的工作帶來了什麼衝擊？", tip: "十大建設、台灣股市破萬點、九二一大地震、或是SARS期間的經歷？" },
+      { id: 308, stageId: 3, category: "出社會與打拼", tag: "#平行人生", question: "如果不考慮現實薪水與家庭責任，年輕的你心裡其實最想從事什麼職業？", tip: "畫家、歌星、作家、廚師、司機還是運動員？" },
+      { id: 309, stageId: 3, category: "出社會與打拼", tag: "#命中貴人", question: "打拼路上，有沒有哪位長官、前輩或朋友是你一輩子感念在心的恩人？", tip: "他曾在關鍵時刻拉了你一把，或是說過什麼改變你一生的金句？" },
+
+      // 階段 4：戀愛與成家
+      { id: 401, stageId: 4, category: "戀愛與成家", tag: "#相遇那一刻", question: "你們當年是怎麼認識的？第一眼見到對方時，心裡真正的第一印象是什麼？", tip: "相親、聯誼、工廠同事、救國團活動、還是路上搭訕？老實招來！" },
+      { id: 402, stageId: 4, category: "戀愛與成家", tag: "#老派約會", question: "當年談戀愛時最常約在哪裡碰面？見面通常會做些什麼？", tip: "冰果室吃四果冰、西餐廳、西門町看電影、海邊看日落？" },
+      { id: 403, stageId: 4, category: "戀愛與成家", tag: "#追求絕招", question: "誰先主動展開追求的？當時用了什麼招數才打動對方的心？", tip: "天天寫信、機車溫馨接送、買對方愛吃的紅豆餅、還是請親友助攻？" },
+      { id: 404, stageId: 4, category: "戀愛與成家", tag: "#非你莫屬", question: "是在哪一個特定事件或相處瞬間，讓你認定「這輩子就是他/她了」？", tip: "生病時的悉心照顧、見對方家人時的表現，還是一句誠懇的承諾？" },
+      { id: 405, stageId: 4, category: "戀愛與成家", tag: "#見雙方長輩", question: "第一次去對方家裡拜見長輩，當時心情緊張嗎？有沒有發生什麼插曲？", tip: "飯桌上有沒有被嚴肅拷問、或是被猛灌高粱酒？" },
+      { id: 406, stageId: 4, category: "戀愛與成家", tag: "#婚禮大日子", question: "結婚當天最深刻的畫面是什麼？穿什麼禮服？吃了幾道菜？", tip: "辦桌流水席、教堂、禮車鳴笛放鞭炮、新娘跨火爐踩瓦片！" },
+      { id: 407, stageId: 4, category: "戀愛與成家", tag: "#柴米油鹽", question: "新婚住在一起時，兩個人生活習慣最大的摩擦或磨合是什麼？", tip: "擠牙膏習慣、口味鹹淡、誰負責管錢？吵架後通常誰先低頭？" },
+      { id: 408, stageId: 4, category: "戀愛與成家", tag: "#第一個家", question: "擁有人生第一間自己買下或租下的房子時，拿到鑰匙那一刻的心情？", tip: "房貸壓力大不大？搬家第一天晚上全家人吃了什麼慶祝？" },
+      { id: 409, stageId: 4, category: "戀愛與成家", tag: "#牽手之道", question: "夫妻攜手走過幾十年的風雨，能夠感情長久最重要的一點是什麼？", tip: "互相信任、適度裝傻包容、還是有共同喜歡吃的美食？" },
+
+      // 階段 5：為人父母育兒
+      { id: 501, stageId: 5, category: "為人父母育兒", tag: "#孩子降生", question: "當你第一次知道自己要當爸爸/媽媽那一刻，心裡的第一個反應是什麼？", tip: "在產房門口焦急等待的心情、第一眼抱起紅通通小嬰兒時的感覺？" },
+      { id: 502, stageId: 5, category: "為人父母育兒", tag: "#新手手忙腳亂", question: "剛把嬰兒帶回家第一個月，最睡眠不足、手足無措的夜晚是怎麼熬過來的？", tip: "換尿布被尿噴臉、半夜泡牛奶手抖、猜不透寶寶為什麼一直哭？" },
+      { id: 503, stageId: 5, category: "為人父母育兒", tag: "#童年糗事", question: "我（或手足）小時候做過什麼讓你笑到肚子痛或哭笑不得的蠢事？", tip: "把整面牆壁畫滿塗鴉、學講話發音不清、還是尿床不敢講？" },
+      { id: 504, stageId: 5, category: "為人父母育兒", tag: "#心驚膽跳", question: "孩子小時候哪一次生病、受傷或走失，讓你急得心臟幾乎快跳出來？", tip: "半夜高燒急診、夜市人潮中走散廣播尋人、還是從沙發上摔下來？" },
+      { id: 505, stageId: 5, category: "為人父母育兒", tag: "#父母的犧牲", question: "自從有了小孩之後，你自己放棄或延後了什麼個人的夢想或愛好？", tip: "不能常常旅遊、放棄高薪升遷、還是整天省吃儉用全留給孩子？" },
+      { id: 506, stageId: 5, category: "為人父母育兒", tag: "#引以為傲", question: "在我看不到的時候，有哪一次我的表現讓你在親友面前無比自豪驕傲？", tip: "拿了獎狀、主動幫忙做家事、孝順長輩、還是懂得體貼別人？" },
+      { id: 507, stageId: 5, category: "為人父母育兒", tag: "#黑臉與白臉", question: "你們在管教小孩時，誰扮演黑臉、誰扮白臉？曾為教養意見不合吵架嗎？", tip: "一個拿棍子嚴管、一個偷偷塞餅乾安撫，最後怎麼達成默契的？" },
+      { id: 508, stageId: 5, category: "為人父母育兒", tag: "#離家背影", question: "當孩子長大上大學或工作第一次搬離老家，看著空蕩房間時的心情是什麼？", tip: "屋子裡突然安靜下來的那天晚上，有沒有忍不住偷偷抹眼淚？" },
+      { id: 509, stageId: 5, category: "為人父母育兒", tag: "#時光倒流", question: "如果時光倒流能回到我五歲或十歲那年，你最想多陪我做些什麼事？", tip: "多帶我去公園散步、少對我發脾氣、還是多拍幾張全家福照片？" },
+
+      // 階段 6：熟年智慧與叮嚀
+      { id: 601, stageId: 6, category: "熟年智慧與叮嚀", tag: "#時空信箋", question: "如果現在能遇見二十歲剛出社會時的自己，你想拍拍他的肩膀說什麼？", tip: "「別那麼著急」、「一切都會過去的」、「記得多愛自己一點」？" },
+      { id: 602, stageId: 6, category: "熟年智慧與叮嚀", tag: "#問心無愧", question: "回望大半輩子，你覺得自己做得最成功、最問心無愧的一件事是什麼？", tip: "把孩子撫養成人、撐起一個家、還是始終保有善良正直的品格？" },
+      { id: 603, stageId: 6, category: "熟年智慧與叮嚀", tag: "#人生一課", question: "如果只能挑一個最核心的人生處世哲學傳給子女與後代，會是什麼？", tip: "誠信、知足常樂、健康是一切的根本、家人最重要？" },
+      { id: 604, stageId: 6, category: "熟年智慧與叮嚀", tag: "#願望清單", question: "現在這個年紀，還有沒有一直想去但還沒去成的地方，或是想學的新事物？", tip: "想去哪裡悠閒旅行？想學畫畫、唱歌、攝影，還是找老朋友敘舊？" },
+      { id: 605, stageId: 6, category: "熟年智慧與叮嚀", tag: "#轉念釋懷", question: "年輕時容易生氣、焦慮或糾結的事情，現在是怎麼學會看開與釋懷的？", tip: "人際誤會、面子問題、金錢得失？什麼時候突然想通的？" },
+      { id: 606, stageId: 6, category: "熟年智慧與叮嚀", tag: "#深刻謝意", question: "生命中除了配偶與父母，還有誰是你一直很想當面說一聲「謝謝你」的？", tip: "小時候的老師、患難相助的鄰居朋友、或是某個萍水相逢的好心人？" },
+      { id: 607, stageId: 6, category: "熟年智慧與叮嚀", tag: "#家傳味道", question: "家裡有沒有一道你最拿手、希望孩子與後代能一代代傳承下去的家傳菜？", tip: "滷肉、水餃、菜脯蛋、煲湯、年糕？裡頭獨特的秘訣與感情是什麼？" },
+      { id: 608, stageId: 6, category: "熟年智慧與叮嚀", tag: "#深情祝福", question: "不管我未來活到幾歲、走什麼樣的路，你對我最大最深的心願祝福是什麼？", tip: "不用大富大貴，只要平安健康快樂就好？請親耳聽長輩溫柔說出來！" },
+      { id: 609, stageId: 6, category: "熟年智慧與叮嚀", tag: "#此刻真心話", question: "看著現在長大成人的我坐在你對面，你現在最想對我說的一句話是什麼？", tip: "輕輕擁抱一下，或是彼此對看十秒鐘，把這份珍貴的溫暖收進心裡。" }
+    ];
+
+    /* --------------------------------------------------------------------------
+       B. 應用程式狀態管理 (Application State)
+       -------------------------------------------------------------------------- */
+    let allQuestions = [];
+    let currentStageId = 0;       // 0: 全部隨機, 1~6: 各階段
+    let currentDeck = [];         // 當前已洗牌的題目隊列
+    let currentDeckIndex = 0;     // 當前在隊列中的索引
+    let historyStack = [];        // 抽卡履歷（支援上一張）
+    let historyPointer = -1;
+    let favorites = [];           // 收藏題目 IDs
+    let isFlipped = false;        // 卡片是否翻轉至背面
+    let currentFontSizeMode = 0;  // 0: 標準, 1: 放大, 2: 特大
+
+    // 音效合成器（使用 Web Audio API，無需外載 mp3）
+    let audioCtx = null;
+    function playPaperSound() {
+      try {
+        if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        if (audioCtx.state === 'suspended') audioCtx.resume();
+        const osc = audioCtx.createOscillator();
+        const gain = audioCtx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(140, audioCtx.currentTime);
+        osc.frequency.exponentialRampToValueAtTime(40, audioCtx.currentTime + 0.12);
+        gain.gain.setValueAtTime(0.08, audioCtx.currentTime);
+        gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + 0.12);
+        osc.connect(gain);
+        gain.connect(audioCtx.destination);
+        osc.start();
+        osc.stop(audioCtx.currentTime + 0.12);
+      } catch (e) {}
+    }
+
+    /* --------------------------------------------------------------------------
+       C. 初始化與本地資料儲存 (LocalStorage)
+       -------------------------------------------------------------------------- */
+    function initApp() {
+      loadSavedData();
+      renderCategoryTabs();
+      buildDeckForCurrentStage();
+      setupEventListeners();
+      setupSwipeGestures();
+      updateFavoriteUI();
+    }
+
+    function loadSavedData() {
+      // 載入自訂問題
+      const savedCustom = localStorage.getItem("story_custom_questions");
+      const customQuestions = savedCustom ? JSON.parse(savedCustom) : [];
+      allQuestions = [...DEFAULT_QUESTIONS, ...customQuestions];
+
+      // 載入收藏 IDs
+      const savedFavs = localStorage.getItem("story_favorites");
+      favorites = savedFavs ? JSON.parse(savedFavs) : [];
+
+      // 載入字體大小設定
+      const savedFont = localStorage.getItem("story_font_mode");
+      if (savedFont !== null) {
+        currentFontSizeMode = parseInt(savedFont, 10);
+        applyFontSizeMode();
+      }
+    }
+
+    function saveCustomQuestions(list) {
+      localStorage.setItem("story_custom_questions", JSON.stringify(list));
+    }
+
+    function saveFavorites() {
+      localStorage.setItem("story_favorites", JSON.stringify(favorites));
+      updateFavoriteUI();
+    }
+
+    /* --------------------------------------------------------------------------
+       D. 題庫洗牌與抽取邏輯 (Fisher-Yates Shuffle & No Repeat)
+       -------------------------------------------------------------------------- */
+    function shuffleArray(array) {
+      const arr = [...array];
+      for (let i = arr.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [arr[i], arr[j]] = [arr[j], arr[i]];
+      }
+      return arr;
+    }
+
+    function buildDeckForCurrentStage() {
+      let filtered = [];
+      if (currentStageId === 0) {
+        filtered = [...allQuestions];
+      } else {
+        filtered = allQuestions.filter(q => q.stageId === currentStageId);
+      }
+
+      currentDeck = shuffleArray(filtered);
+      currentDeckIndex = 0;
+      historyStack = [];
+      historyPointer = -1;
+
+      if (currentDeck.length > 0) {
+        historyStack.push(currentDeck[0]);
+        historyPointer = 0;
+        showCard(currentDeck[0]);
+      } else {
+        showEmptyDeck();
+      }
+
+      updateProgressUI();
+    }
+
+    /* --------------------------------------------------------------------------
+       E. 卡片展示與 3D 翻轉動態
+       -------------------------------------------------------------------------- */
+    const cardEl = document.getElementById("story-card");
+    const deckEmptyEl = document.getElementById("deck-empty-box");
+
+    function showCard(question, direction = 'next') {
+      if (!question) {
+        showEmptyDeck();
+        return;
+      }
+      deckEmptyEl.style.display = "none";
+      cardEl.style.display = "block";
+
+      // 換卡時若處於翻轉狀態，先翻回正面或重置
+      if (isFlipped) {
+        isFlipped = false;
+        cardEl.classList.remove("is-flipped");
+      }
+
+      // 卡片切換動畫
+      cardEl.classList.remove("slide-in-right", "slide-in-left", "slide-out-left", "slide-out-right");
+      void cardEl.offsetWidth; // trigger reflow
+      if (direction === 'next') {
+        cardEl.classList.add("slide-in-right");
+      } else if (direction === 'prev') {
+        cardEl.classList.add("slide-in-left");
+      }
+
+      // 取得階段 Meta
+      const stageMeta = STAGE_META.find(s => s.id === question.stageId) || STAGE_META[1];
+
+      // 填充正面內容
+      document.getElementById("front-cat-icon").textContent = stageMeta.icon;
+      document.getElementById("front-cat-name").textContent = question.category;
+      document.getElementById("front-big-icon").textContent = stageMeta.bigIcon;
+      document.getElementById("front-headline").textContent = `時光序章・${question.category}`;
+
+      // 填充背面內容
+      document.getElementById("back-cat-icon").textContent = stageMeta.icon;
+      document.getElementById("back-cat-name").textContent = question.category;
+      document.getElementById("back-era-tag").textContent = question.tag || "#歲月故事";
+      document.getElementById("back-question-text").textContent = question.question;
+      document.getElementById("back-tip-text").textContent = question.tip || "請放慢步調，仔細傾聽長輩的心聲。";
+      document.getElementById("back-id-label").textContent = `#${question.id}`;
+
+      updateFavoriteButtonState();
+      playPaperSound();
+    }
+
+    function flipCard() {
+      isFlipped = !isFlipped;
+      cardEl.classList.toggle("is-flipped", isFlipped);
+      playPaperSound();
+    }
+
+    function showEmptyDeck() {
+      cardEl.style.display = "none";
+      deckEmptyEl.style.display = "flex";
+      document.getElementById("label-card-progress").textContent = "已完成全部";
+      document.getElementById("progress-fill").style.width = "100%";
+    }
+
+    /* --------------------------------------------------------------------------
+       F. 抽下一張 / 回上一張操作
+       -------------------------------------------------------------------------- */
+    function nextCard() {
+      // 若目前在履歷中間，先往前走履歷
+      if (historyPointer < historyStack.length - 1) {
+        historyPointer++;
+        showCard(historyStack[historyPointer], 'next');
+        updateProgressUI();
+        return;
+      }
+
+      // 否則從當前 Deck 抽下一張新卡
+      if (currentDeckIndex < currentDeck.length - 1) {
+        currentDeckIndex++;
+        const nextQ = currentDeck[currentDeckIndex];
+        historyStack.push(nextQ);
+        historyPointer = historyStack.length - 1;
+        showCard(nextQ, 'next');
+      } else {
+        showEmptyDeck();
+      }
+      updateProgressUI();
+    }
+
+    function prevCard() {
+      if (historyPointer > 0) {
+        historyPointer--;
+        showCard(historyStack[historyPointer], 'prev');
+        updateProgressUI();
+      } else {
+        showToast("已經是第一張囉！");
+      }
+    }
+
+    function getCurrentQuestion() {
+      if (historyPointer >= 0 && historyPointer < historyStack.length) {
+        return historyStack[historyPointer];
+      }
+      return null;
+    }
+
+    /* --------------------------------------------------------------------------
+       G. 分類導覽與進度更新
+       -------------------------------------------------------------------------- */
+    function renderCategoryTabs() {
+      const container = document.getElementById("category-tabs-container");
+      container.innerHTML = "";
+
+      STAGE_META.forEach(stage => {
+        const pill = document.createElement("button");
+        pill.className = `cat-pill ${stage.id === currentStageId ? 'active' : ''}`;
+        pill.innerHTML = `<span>${stage.icon}</span><span>${stage.name}</span>`;
+        pill.onclick = () => switchStage(stage.id);
+        container.appendChild(pill);
+      });
+    }
+
+    function switchStage(stageId) {
+      if (currentStageId === stageId) return;
+      currentStageId = stageId;
+      renderCategoryTabs();
+      buildDeckForCurrentStage();
+      const currentMeta = STAGE_META.find(s => s.id === currentStageId);
+      document.getElementById("label-stage-name").textContent = currentMeta.name;
+      showToast(`已切換至【${currentMeta.name}】`);
+    }
+
+    function updateProgressUI() {
+      const total = currentDeck.length;
+      const current = Math.min(currentDeckIndex + 1, total);
+      document.getElementById("label-card-progress").textContent = `${current} / ${total}`;
+      const pct = total === 0 ? 0 : Math.round((current / total) * 100);
+      document.getElementById("progress-fill").style.width = `${pct}%`;
+    }
+
+    /* --------------------------------------------------------------------------
+       H. 收藏功能與清單管理
+       -------------------------------------------------------------------------- */
+    function toggleFavorite() {
+      const currentQ = getCurrentQuestion();
+      if (!currentQ) return;
+
+      const idx = favorites.indexOf(currentQ.id);
+      if (idx > -1) {
+        favorites.splice(idx, 1);
+        showToast("已從收藏移除");
+      } else {
+        favorites.push(currentQ.id);
+        showToast("⭐ 已加入收藏題庫！");
+      }
+      saveFavorites();
+      updateFavoriteButtonState();
+    }
+
+    function updateFavoriteButtonState() {
+      const currentQ = getCurrentQuestion();
+      const favBtn = document.getElementById("btn-fav-card");
+      const favIcon = document.getElementById("fav-icon-svg");
+      const label = document.getElementById("fav-btn-label");
+
+      if (currentQ && favorites.includes(currentQ.id)) {
+        favBtn.classList.add("favorited");
+        favIcon.setAttribute("fill", "#E24B4B");
+        label.textContent = "已收藏";
+      } else {
+        favBtn.classList.remove("favorited");
+        favIcon.setAttribute("fill", "none");
+        label.textContent = "收藏";
+      }
+    }
+
+    function updateFavoriteUI() {
+      const badge = document.getElementById("badge-fav-count");
+      if (favorites.length > 0) {
+        badge.style.display = "flex";
+        badge.textContent = favorites.length;
+      } else {
+        badge.style.display = "none";
+      }
+    }
+
+    function renderBookmarksModal() {
+      const container = document.getElementById("favorites-list-container");
+      container.innerHTML = "";
+
+      if (favorites.length === 0) {
+        container.innerHTML = `
+          <div style="text-align:center; padding: 30px 10px; color: var(--color-text-muted);">
+            <div style="font-size:36px; margin-bottom:8px;">🤍</div>
+            <p>目前還沒有收藏任何題目喔！<br>抽卡時點擊「收藏」按鈕，即可隨時重溫珍貴問題。</p>
+          </div>
+        `;
+        return;
+      }
+
+      favorites.forEach(favId => {
+        const q = allQuestions.find(item => item.id === favId);
+        if (!q) return;
+
+        const item = document.createElement("div");
+        item.className = "favorite-item";
+        item.innerHTML = `
+          <div class="favorite-info">
+            <div class="fav-category">${q.category} ${q.tag ? '・' + q.tag : ''}</div>
+            <div class="fav-title">${q.question}</div>
+          </div>
+          <div style="font-size:18px; color: #E24B4B;">♥</div>
+        `;
+        item.onclick = () => {
+          closeModal('modal-bookmarks');
+          historyStack.push(q);
+          historyPointer = historyStack.length - 1;
+          showCard(q, 'next');
+          // 若處於背面，可直接看到問題
+          flipCard();
+        };
+        container.appendChild(item);
+      });
+    }
+
+    /* --------------------------------------------------------------------------
+       I. 自訂問題處理
+       -------------------------------------------------------------------------- */
+    function handleCustomQuestionSubmit(e) {
+      e.preventDefault();
+      const stageId = parseInt(document.getElementById("custom-stage-select").value, 10);
+      const stageMeta = STAGE_META.find(s => s.id === stageId) || STAGE_META[1];
+      const questionText = document.getElementById("custom-question-input").value.trim();
+      const tipText = document.getElementById("custom-tip-input").value.trim();
+      const tagText = document.getElementById("custom-tag-input").value.trim() || "#私房珍藏";
+
+      if (!questionText) return;
+
+      const newQuestion = {
+        id: Date.now(),
+        stageId: stageId,
+        category: stageMeta.name,
+        tag: tagText.startsWith('#') ? tagText : '#' + tagText,
+        question: questionText,
+        tip: tipText || "用心聆聽，並溫暖回應長輩的每一句話。"
+      };
+
+      // 讀取既有自訂題目
+      const savedCustom = localStorage.getItem("story_custom_questions");
+      const customList = savedCustom ? JSON.parse(savedCustom) : [];
+      customList.push(newQuestion);
+      saveCustomQuestions(customList);
+
+      allQuestions.push(newQuestion);
+      closeModal('modal-add-question');
+      document.getElementById("form-add-question").reset();
+
+      // 插入到當前隊列最前端並立即呈現
+      historyStack.push(newQuestion);
+      historyPointer = historyStack.length - 1;
+      showCard(newQuestion, 'next');
+      showToast("🎉 自訂問題已成功新增並為您抽中！");
+    }
+
+    /* --------------------------------------------------------------------------
+       J. 內建訪談錄音機 (MediaRecorder API 實作)
+       -------------------------------------------------------------------------- */
+    let mediaRecorder = null;
+    let audioChunks = [];
+    let recordInterval = null;
+    let recordStartTime = 0;
+    let recordElapsedSeconds = 0;
+    let isRecordingPaused = false;
+    let recordedAudioBlob = null;
+    let recordedAudioUrl = null;
+
+    const btnStartRecord = document.getElementById("btn-start-record");
+    const activeRecordUi = document.getElementById("active-record-ui");
+    const recDot = document.getElementById("rec-dot");
+    const recTimerLabel = document.getElementById("rec-timer-label");
+    const btnPauseRecord = document.getElementById("btn-pause-record");
+    const pauseRecordText = document.getElementById("pause-record-text");
+    const btnStopRecord = document.getElementById("btn-stop-record");
+
+    async function startRecording() {
+      try {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          alert("很抱歉，您的手機瀏覽器不支援直接音訊錄製。請確認使用 Safari 或 Chrome 並透過 HTTPS 或 localhost 開啟。");
+          return;
+        }
+
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        
+        // 偵測支援的 MIME 類型 (iOS Safari 支援 mp4/aac，Android/Chrome 支援 webm/opus)
+        let mimeType = 'audio/webm;codecs=opus';
+        if (!MediaRecorder.isTypeSupported(mimeType)) {
+          if (MediaRecorder.isTypeSupported('audio/webm')) {
+            mimeType = 'audio/webm';
+          } else if (MediaRecorder.isTypeSupported('audio/mp4')) {
+            mimeType = 'audio/mp4';
+          } else {
+            mimeType = ''; // 瀏覽器預設
+          }
+        }
+
+        audioChunks = [];
+        mediaRecorder = mimeType ? new MediaRecorder(stream, { mimeType }) : new MediaRecorder(stream);
+
+        mediaRecorder.ondataavailable = (e) => {
+          if (e.data && e.data.size > 0) {
+            audioChunks.push(e.data);
+          }
+        };
+
+        mediaRecorder.onstop = () => {
+          // 停止所有音訊軌以釋放麥克風指示燈
+          stream.getTracks().forEach(track => track.stop());
+          clearInterval(recordInterval);
+
+          const finalMime = mediaRecorder.mimeType || 'audio/webm';
+          recordedAudioBlob = new Blob(audioChunks, { type: finalMime });
+          if (recordedAudioUrl) URL.revokeObjectURL(recordedAudioUrl);
+          recordedAudioUrl = URL.createObjectURL(recordedAudioBlob);
+
+          // 錄音完成彈出面板
+          showAudioResultModal(finalMime);
+        };
+
+        mediaRecorder.start(1000); // 每秒收集一個 chunk 避免遺失
+        recordElapsedSeconds = 0;
+        isRecordingPaused = false;
+        recordStartTime = Date.now();
+        updateTimerDisplay();
+
+        recordInterval = setInterval(() => {
+          if (!isRecordingPaused) {
+            recordElapsedSeconds++;
+            updateTimerDisplay();
+          }
+        }, 1000);
+
+        // UI 狀態切換
+        btnStartRecord.style.display = "none";
+        activeRecordUi.style.display = "flex";
+        recDot.classList.remove("paused");
+        pauseRecordText.textContent = "⏸️ 暫停";
+        showToast("🎙️ 錄音已開始，暢所欲言吧！");
+
+      } catch (err) {
+        console.error("麥克風授權失敗:", err);
+        alert("無法啟動麥克風！請在手機瀏覽器設定中允許此網頁存取「麥克風權限」。");
+      }
+    }
+
+    function togglePauseRecording() {
+      if (!mediaRecorder) return;
+      if (mediaRecorder.state === 'recording') {
+        mediaRecorder.pause();
+        isRecordingPaused = true;
+        recDot.classList.add("paused");
+        pauseRecordText.textContent = "▶️ 繼續";
+        showToast("錄音已暫停");
+      } else if (mediaRecorder.state === 'paused') {
+        mediaRecorder.resume();
+        isRecordingPaused = false;
+        recDot.classList.remove("paused");
+        pauseRecordText.textContent = "⏸️ 暫停";
+        showToast("繼續錄音中");
+      }
+    }
+
+    function stopRecording() {
+      if (!mediaRecorder) return;
+      if (mediaRecorder.state !== 'inactive') {
+        mediaRecorder.stop();
+      }
+      btnStartRecord.style.display = "flex";
+      activeRecordUi.style.display = "none";
+    }
+
+    function updateTimerDisplay() {
+      const mins = Math.floor(recordElapsedSeconds / 60).toString().padStart(2, '0');
+      const secs = (recordElapsedSeconds % 60).toString().padStart(2, '0');
+      recTimerLabel.textContent = `${mins}:${secs}`;
+    }
+
+    function showAudioResultModal(mimeType) {
+      const currentQ = getCurrentQuestion();
+      const topicText = currentQ ? `【${currentQ.category}】${currentQ.question}` : "人生故事訪談";
+      const mins = Math.floor(recordElapsedSeconds / 60).toString().padStart(2, '0');
+      const secs = (recordElapsedSeconds % 60).toString().padStart(2, '0');
+
+      document.getElementById("audio-modal-topic").textContent = topicText;
+      document.getElementById("audio-modal-duration").textContent = `訪談錄音長度：${mins}分${secs}秒`;
+
+      const audioPlayer = document.getElementById("modal-audio-player");
+      audioPlayer.src = recordedAudioUrl;
+
+      // 下載連結設定
+      const downloadBtn = document.getElementById("btn-download-audio");
+      downloadBtn.href = recordedAudioUrl;
+      const extension = mimeType.includes("mp4") ? "mp4" : "webm";
+      const nowStr = new Date().toISOString().slice(0,10).replace(/-/g, '');
+      const safeTitle = (currentQ ? currentQ.question : "父母故事").substring(0, 15).replace(/[\\/:*?"<>|]/g, '');
+      downloadBtn.download = `${nowStr}_${safeTitle}.${extension}`;
+
+      openModal("modal-audio-result");
+    }
+
+    /* --------------------------------------------------------------------------
+       K. 手勢滑動 (Swipe Left / Right 切換卡片)
+       -------------------------------------------------------------------------- */
+    function setupSwipeGestures() {
+      const stageArea = document.getElementById("card-stage-area");
+      let touchStartX = 0;
+      let touchStartY = 0;
+      let touchEndX = 0;
+      let touchEndY = 0;
+
+      stageArea.addEventListener("touchstart", (e) => {
+        touchStartX = e.changedTouches[0].screenX;
+        touchStartY = e.changedTouches[0].screenY;
+      }, { passive: true });
+
+      stageArea.addEventListener("touchend", (e) => {
+        touchEndX = e.changedTouches[0].screenX;
+        touchEndY = e.changedTouches[0].screenY;
+        handleGesture();
+      }, { passive: true });
+
+      function handleGesture() {
+        const diffX = touchEndX - touchStartX;
+        const diffY = touchEndY - touchStartY;
+        // 確保為水平滑動且位移足夠
+        if (Math.abs(diffX) > 48 && Math.abs(diffX) > Math.abs(diffY)) {
+          if (diffX < 0) {
+            // 向左滑動 -> 下一張
+            nextCard();
+          } else {
+            // 向右滑動 -> 上一張
+            prevCard();
+          }
+        }
+      }
+    }
+
+    /* --------------------------------------------------------------------------
+       L. 字體縮放控制
+       -------------------------------------------------------------------------- */
+    function toggleFontSize() {
+      currentFontSizeMode = (currentFontSizeMode + 1) % 3;
+      applyFontSizeMode();
+      localStorage.setItem("story_font_mode", currentFontSizeMode.toString());
+      const labels = ["標準字體", "舒適大字", "特大字體（長輩最清晰）"];
+      showToast(`已切換為：${labels[currentFontSizeMode]}`);
+    }
+
+    function applyFontSizeMode() {
+      document.body.classList.remove("font-large", "font-xlarge");
+      if (currentFontSizeMode === 1) {
+        document.body.classList.add("font-large");
+      } else if (currentFontSizeMode === 2) {
+        document.body.classList.add("font-xlarge");
+      }
+    }
+
+    /* --------------------------------------------------------------------------
+       M. 彈窗與 Toast 輔助函式
+       -------------------------------------------------------------------------- */
+    function openModal(modalId) {
+      const modal = document.getElementById(modalId);
+      if (modal) modal.classList.add("open");
+    }
+
+    function closeModal(modalId) {
+      const modal = document.getElementById(modalId);
+      if (modal) {
+        modal.classList.remove("open");
+        // 若為音訊彈窗，關閉時停止試聽
+        if (modalId === "modal-audio-result") {
+          const audioPlayer = document.getElementById("modal-audio-player");
+          if (audioPlayer) audioPlayer.pause();
+        }
+      }
+    }
+
+    let toastTimeout = null;
+    function showToast(message) {
+      const toast = document.getElementById("app-toast");
+      toast.textContent = message;
+      toast.classList.add("show");
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove("show");
+      }, 2200);
+    }
+
+    /* --------------------------------------------------------------------------
+       N. 事件綁定註冊
+       -------------------------------------------------------------------------- */
+    function setupEventListeners() {
+      // 點擊卡片翻牌
+      cardEl.addEventListener("click", flipCard);
+
+      // 上一張 / 下一張 / 收藏按鈕
+      document.getElementById("btn-prev-card").addEventListener("click", prevCard);
+      document.getElementById("btn-next-card").addEventListener("click", nextCard);
+      document.getElementById("btn-fav-card").addEventListener("click", toggleFavorite);
+
+      // 重新洗牌
+      document.getElementById("btn-reshuffle").addEventListener("click", () => {
+        buildDeckForCurrentStage();
+        showToast("已重新洗牌題庫！");
+      });
+
+      // 字體大小
+      document.getElementById("btn-font-toggle").addEventListener("click", toggleFontSize);
+
+      // 收藏彈窗
+      document.getElementById("btn-open-bookmarks").addEventListener("click", () => {
+        renderBookmarksModal();
+        openModal("modal-bookmarks");
+      });
+
+      // 新增題目彈窗
+      document.getElementById("btn-open-add").addEventListener("click", () => {
+        openModal("modal-add-question");
+      });
+
+      // 錄音相關按鈕
+      btnStartRecord.addEventListener("click", startRecording);
+      btnPauseRecord.addEventListener("click", togglePauseRecording);
+      btnStopRecord.addEventListener("click", stopRecording);
+
+      // 點擊彈窗遮罩關閉
+      document.querySelectorAll(".modal-overlay").forEach(overlay => {
+        overlay.addEventListener("click", (e) => {
+          if (e.target === overlay) {
+            closeModal(overlay.id);
+          }
+        });
+      });
+    }
+
+    // 啟動應用程式
+    document.addEventListener("DOMContentLoaded", initApp);
+  </script>
+</body>
+</html>
